@@ -1,0 +1,48 @@
+html {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 90%;
+  min-height: 95vh;
+  background-image: url('certificate.jpg');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+h1,
+h3,
+h4 {
+  text-align: center;
+  margin-left: 90px;
+}
+
+#btns {
+  padding: 20px;
+
+  flex-direction: column;
+  flex: 1;
+}
+
+#status {
+  padding: 20px;
+}
+
+.hidden {
+  visibility: hidden;
+}
+
+#content {
+  position: relative;
+  width: 50%;
+  height: 50vh;
+}
+
+#addresses {
+  padding: 20px;
+}

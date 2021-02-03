@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlockChain Project</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src='node_modules/web3/dist/web3.min.js'></script>
+</head>
+
+<body>
+    <div id='content'>
+        <br />
+        <br />
+        <h1>BlockChain Project - SCE 2020</h1>
+        <br />
+        <h3 id='perspective'>[you logged in as: -not logged in-]</h3>
+        <h4>This is a marriage certificate between the parties:</h4>
+        <br />
+        <div id='addresses' >-- No addresses loaded --</div>
+    </div>
+    <div id='bottom'>
+        <div id='btns'>
+            <button id='checkBtn' onclick="checkForSignatures();">Check for signatures</button>
+            <button id='signBtn'  onclick="signTheContract();">Sign Marriage Certificate</button>
+        </div>
+        <div id='status' style="flex: 1">
+            Awaiting action
+        </div>
+
+    </div>
+    <script type="text/javascript">
+
+        async function loadWeb3(){
+            updateStatus('<b>Status:</b> MetaMask authorization is required, waiting...')
+            //enables Metamask 
+            if (window.ethereum) {
+                window.web3 = new Web3(window.ethereum);
+                const res = await window.ethereum.enable(); // ----> Metamask pop up window
+                if(res) return true; // ----> only continue execution if user logged in
+            }
+            
+        }
+        //first argument is the ABI from Solidity compiler
+        //second argument is the contract address from the Solidity deployment
+        async function loadContract(){
+            return await new window.web3.eth.Contract([
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "_signature",
+				"type": "bool"
+			}
+		],
+		"name": "setBrideSignature",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "_signature",
+				"type": "bool"
+			}
+		],
+		"name": "setGroomSignature",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "brideAddress",
+		"outputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "brideSignature",
+		"outputs": [
+			{
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "contractCreatorAddress",
+		"outputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "creatorAddress",
+		"outputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "groomAddress",
+		"outputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "groomSignature",
+		"outputs": [
+			{
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	}
+],'0x1E6D8711e1a884E5af71A855bEbBA4a905319B62')
+        }
+
+        async function checkForSignatures(){
+            updateStatus('<b>Status:</b> Checking signatures of the participants, please wait...')
+            const BrideSignature = await window.contract.methods.brideSignature().call();
+            const GroomSignature = await window.contract.methods.groomSignature().call();
+            updateStatus(`<b>Status:</b> Participants signature status is: <br /> Bride: ${BrideSignature} <br /> Groom: ${GroomSignature}`)
+        }
+
+        async function getCurrentAccount(){
+            //get all metamask accounts
+            const accounts = await window.web3.eth.getAccounts();
+            //return the first - which is the current
+            return accounts[0];
+        }
+        
+        async function signTheContract(){
+            updateStatus('<b>Status:</b> The contract is being signed, please wait...')
+            //account from my metamask
+            const account = await getCurrentAccount();
+            const brideAddress = await window.contract.methods.brideAddress().call();
+            const groomAddress = await window.contract.methods.groomAddress().call();
+            //each time we create signature a transaction is created
+            if(account == brideAddress){
+                await window.contract.methods.setBrideSignature(true).send({ from: account });
+                updateStatus('<b>Status:</b> Congrats, you have signed the contract!');
+            }
+            if(account == groomAddress){
+                await window.contract.methods.setGroomSignature(true).send({ from: account });
+                updateStatus('<b>Status:</b> Congrats, you have signed the contract!');
+            }
+        }
+
+        //first function to be executed
+        async function load(){
+            console.log('load is ACTIVATED');
+            updateStatus('<b>Status:</b> Loading data...')
+            const res = await loadWeb3(); // ----> enables metamask auth
+            if(res){
+                window.contract = await loadContract(); // ----> loads contract
+                updateCoupleAddress();
+                updateStatus('<b> Status: </b> Awaiting user action')
+            }
+        }
+
+        async function updateStatus(status){
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = status;
+        }
+        
+        //function that determines different perspectives 
+        async function updateCoupleAddress(){
+            console.log('updateCoupleAddress is ACTIVATED');
+            const curr = await getCurrentAccount(); // ----> the account that is currently logged to Metamask
+            const creator = await window.contract.methods.contractCreatorAddress().call();
+            const brideAddress = await window.contract.methods.brideAddress().call();
+            const groomAddress = await window.contract.methods.groomAddress().call();
+            const creatorAddress = await window.contract.methods.creatorAddress().call();
+            
+            const addressPreviewEl = document.getElementById('addresses');
+            const perspectiveEl = document.getElementById('perspective');
+            const checkBtnEl = document.getElementById('checkBtn');
+            const signBtnEl = document.getElementById('signBtn');
+            
+            if(curr == brideAddress){
+                perspectiveEl.innerHTML = '[you logged in as: BRIDE]';
+                checkBtnEl.classList.add('hidden');
+            }
+            else if(curr == groomAddress){
+                perspectiveEl.innerHTML = '[you logged in as: GROOM]';
+                checkBtnEl.classList.add('hidden');
+            }
+            else if(curr == creator){
+                perspectiveEl.innerHTML = '[you logged in as: LAWYER]';
+                signBtnEl.classList.add('hidden');
+            }
+            else{
+                perspectiveEl.innerHTML = '[you logged in as: GUEST]';
+                signBtnEl.classList.add('hidden');
+            }
+
+            addressPreviewEl.innerHTML =  `1. <b> ${brideAddress} - the address of the BRIDE </b>
+            <br/> 
+            2. <b> ${groomAddress} - the address of the GROOM </b>
+            <br/> 
+            3. <b> ${creatorAddress} - the address of the LAWYER</b>`
+        }
+
+        load();
+    </script>
+</body>
+</html>
